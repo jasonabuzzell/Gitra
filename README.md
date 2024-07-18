@@ -4,7 +4,7 @@ This is a tool that will allow automatic source control of one game file with mu
 To use Gitra, simply run the gitra-windows-1.0.0.exe (may make a macOS version if asked nicely). This will do the following:
 1. Install Git and Git LFS (if necessary).
 2. Ask to make a Github account (if necessary).
-3. Ask for an online repository to sync a gamefile to. The repository should have a JSON file that looks like: `{ "Checkout": "", "ROM": "" }`
+3. Ask for an online repository to sync a gamefile to. The repository should have a JSON file (info.json) that looks like: `{ "Checkout": "", "ROM": "" }`
 4. Ask for a game file (.3ds, .cia) to add to said repository.
 5. Sync up said repository every time Gitra is run, to keep the user on the latest version of the game file.
 6. Try to exclusively checkout the repository, so no one else can play at the same time and cause merge conflicts.
