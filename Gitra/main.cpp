@@ -197,7 +197,7 @@ int main() {
         system("git init");
         system("git lfs install");
         cout << "\nGit installed, attempting to restart Gitra executable...";
-        system("restart.exe");
+        system("Restart.exe");
         return 0;
     }
 
