@@ -11,8 +11,12 @@
 using namespace std;
 using namespace nlohmann;
 
+// HELPFUL FUNCTIONS
+// git diff --cached
+
 // NAMES
 const string programName = "Gitra";
+const string versionName = "1.0.0";
 const string settingsName = "settings.json";
 const string checkoutName = "Checkout";
 const string romName = "ROM";
@@ -39,15 +43,17 @@ void shutdown() {
 
     // Zip up updated ROM.
     string romFileName = info[romName];
+    cout << "\nZipping up new changes to game file...";
     int zipResult = system(format("cd {} && tar.exe -a -c -f {}.zip {}", repositoryPath, romFileName, romFileName).c_str());
 
     // Commit changes.
-    int commitResult = system(format("cd {} && git add {} {}.zip && git commit -a -m Update && git push", repositoryPath, infoFileName, romFileName).c_str());
+    int commitResult = system(format("cd {} && git add {} {}.zip && git commit -m Update && git push", repositoryPath, infoFileName, romFileName).c_str());
 }
 
 // Intercepts close events on Windows. 
 // Apparently there's a timeout of 3 seconds for close events, which makes this much more difficult to submit in time.
 // Advise users to close Citra to submit, not the console.
+/*
 BOOL CtrlHandler(DWORD fdwCtrlType)
 {
     switch (fdwCtrlType) {
@@ -60,6 +66,7 @@ BOOL CtrlHandler(DWORD fdwCtrlType)
         return FALSE;
     }
 }
+*/
 
 // Returns the .gitconfig username.
 string getUsername() {
@@ -90,9 +97,12 @@ void cloneRepository() {
     // Clone the repository.
     int cloneResult = system(format("git clone {} {}", repositoryURL, repositoryPath).c_str());
 
+    // Add as a safe directory.
+    system(format("git config --global --add safe.directory {}", repositoryPath).c_str()); // Need the repository, ugh.
+
     // Setup repo to handle large files, if it isn't already.
     system(format("cd {} && git lfs track \"*.zip\" ", repositoryPath).c_str());
-    int commitResult = system(format("cd {} && git add .gitattributes && git commit -a -m Update_Attributes && git push", repositoryPath, infoFileName).c_str());
+    int commitResult = system(format("cd {} && git add .gitattributes && git commit -m Update_Attributes && git push", repositoryPath, infoFileName).c_str());
 }
 
 bool setROM() {
@@ -118,7 +128,7 @@ bool setROM() {
         int zipResult = system(format("cd {} && tar.exe -a -c -f {}.zip {}", repositoryPath, romFileName, romFileName).c_str());
 
         // Commit zipped ROM.
-        int commitResult = system(format("cd {} && git add {} {}.zip && git commit -a -m Copy_ROM && git push", repositoryPath, infoFileName, romFileName).c_str());
+        int commitResult = system(format("cd {} && git add {} {}.zip && git commit -m Copy_ROM && git push", repositoryPath, infoFileName, romFileName).c_str());
     }
 
     return true;
@@ -147,24 +157,18 @@ bool getExclusiveCheckout() {
     jsonSave(info, infoPath);
 
     string romFileName = info[romName];
-    int commitResult = system(format("cd {} && git add {} && git commit -a -m Checkout && git push", repositoryPath, infoFileName).c_str());
+    int commitResult = system(format("cd {} && git add {} && git commit -m Checkout && git push", repositoryPath, infoFileName).c_str());
+
+    // If we successfully checked out, then extract the ROM.
+    system(format("cd {} && tar.exe -xzvf {}.zip", repositoryPath, romFileName).c_str());
 
     return true;
 }
 
 // This function will get the latest revision forcefully.
 bool forcePull() {
-    // Force pull get latest.
-    if (system(format("cd {} && git reset --hard HEAD && git clean -f -d && git pull", repositoryPath).c_str())) return false;
-
-    // Extract the ROM zip.
-    json info = jsonLoad(infoPath);
-    string romFileName = info[romName];
-    if (!romFileName.empty()) {
-        system(format("cd {} && tar.exe -xzvf {}.zip", repositoryPath, romFileName).c_str());
-    }
-
-    return true;
+    if (system(format("cd {} && git reset --hard HEAD && git clean -f && git pull", repositoryPath).c_str())) return false;
+    else return true;
 }
 
 void clear() {
@@ -172,38 +176,56 @@ void clear() {
     info[checkoutName] = "";
     info[romName] = "";
     jsonSave(info, infoPath);
-    system(format("cd {} && git add {} && git commit -a -m \'Reset_Info\' && git push", repositoryPath, infoFileName).c_str());
+    system(format("cd {} && git add {} && git commit -m \'Reset_Info\' && git push", repositoryPath, infoFileName).c_str());
 }
 
 void resetCheckout() {
     json info = jsonLoad(infoPath);
     info[checkoutName] = "";
     jsonSave(info, infoPath);
+
     system(format("cd {} && git add {} && git commit -m \'Reset_Info\' && git push", repositoryPath, infoFileName).c_str());
+}
+
+// Need to separate this out somehow.
+void installGit() {
+    int gitResult = system("git --version");
+    if (gitResult != 0) {
+        cout << "\nGit not found! Going to run Git and Git LFS setup executables.\nPlease use the default settings when prompted.";
+        int installResult = system("cd binaries && Git-2.45.2-64-bit.exe");
+        cout << "\nGit installed, please restart Gitra.exe!";
+    }
+}
+
+void installGitLFS() {
+    int gitLFSResult = system("git lfs --version");
+    if (gitLFSResult != 0) {
+        int installResult = system("cd binaries && git-lfs-windows-v3.5.1.exe");
+        system("git lfs install");
+
+        /*
+        // Git config somehow? What is username and email?
+        system("git config --global user.name");
+        system("git config --global user.email");
+        */
+    }
 }
 
 // MAIN
 int main() {
-    system(format("cd {} && git stash", repositoryPath).c_str()); // Stash any changes you had prior.
+    cout << programName + " " + versionName + "\n";
 
-    // Set handler for closing events.
-    SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, TRUE);
+    // system(format("cd {} && git stash", repositoryPath).c_str()); // Stash any changes you had prior.
 
-    // INSTALL (Git)
-    int gitResult = system("git --version");
-    if (gitResult != 0) {
-        cout << "\nGit not found! Going to run Git and Git LFS setup executables.\nPlease use the default settings when prompted.";
-        int installResult = system("cd binaries && Git-2.45.2-64-bit.exe && git-lfs-windows-v3.5.1.exe");
-        system("git init");
-        system("git lfs install");
-        cout << "\nGit installed, attempting to restart Gitra executable...";
-        system("Restart.exe");
-        return 0;
-    }
+    // Set handler for closing events. NOT GOING TO DO THIS BECAUSE WINDOWS DOESN'T GIVE ENOUGH TIME.
+    // SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, TRUE);
+
+    // INSTALL (Git) 
+    installGit();
+    installGitLFS();
 
     // SETUP (needs user input)
     if (!exists(repositoryPath)) cloneRepository();
-
     if (!forcePull()) {
         system("pause");
         return 2;
@@ -226,11 +248,10 @@ int main() {
         json info = jsonLoad(infoPath);
         string romPath = repositoryPath + info[romName].get<string>();
 
+        cout << "\nRunning Citra...\nDO NOT CLOSE THE CONSOLE! When finished playing, close Citra!";
         int result = system(format("{} {}", permCitraExePath, romPath).c_str());
 
         done = true;
-
-        cout << "\nClosed Citra. DO NOT CLOSE CONSOLE WINDOW! Uploading local game file to repository...";
     });
 
     // LOOP (keep looping until this window closes).
@@ -244,5 +265,6 @@ int main() {
         Sleep(100); // Just to not tick so often.
     };
 
+    system("pause");
     return 0;
 }
