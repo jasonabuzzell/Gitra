@@ -192,9 +192,13 @@ int main() {
     // INSTALL (Git)
     int gitResult = system("git --version");
     if (gitResult != 0) {
+        cout << "\nGit not found! Going to run Git and Git LFS setup executables.\nPlease use the default settings when prompted.";
         int installResult = system("cd binaries && Git-2.45.2-64-bit.exe && git-lfs-windows-v3.5.1.exe");
         system("git init");
         system("git lfs install");
+        cout << "\nGit installed, attempting to restart Gitra executable...";
+        system("restart.exe");
+        return 0;
     }
 
     // SETUP (needs user input)
@@ -225,7 +229,9 @@ int main() {
         int result = system(format("{} {}", permCitraExePath, romPath).c_str());
 
         done = true;
-        });
+
+        cout << "\nClosed Citra. DO NOT CLOSE CONSOLE WINDOW! Uploading local game file to repository...";
+    });
 
     // LOOP (keep looping until this window closes).
     while (true) {

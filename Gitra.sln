@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Reset Checkout", "Reset Che
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ManualSubmit", "ManualSubmit\ManualSubmit.vcxproj", "{806C3C9B-4F4D-4561-A4CF-EDF90D80BD90}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Restart", "Restart\Restart.vcxproj", "{A1802BD3-43AD-4322-95F3-F5F1DFFF9188}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -41,6 +43,14 @@ Global
 		{806C3C9B-4F4D-4561-A4CF-EDF90D80BD90}.Release|x64.Build.0 = Release|x64
 		{806C3C9B-4F4D-4561-A4CF-EDF90D80BD90}.Release|x86.ActiveCfg = Release|Win32
 		{806C3C9B-4F4D-4561-A4CF-EDF90D80BD90}.Release|x86.Build.0 = Release|Win32
+		{A1802BD3-43AD-4322-95F3-F5F1DFFF9188}.Debug|x64.ActiveCfg = Debug|x64
+		{A1802BD3-43AD-4322-95F3-F5F1DFFF9188}.Debug|x64.Build.0 = Debug|x64
+		{A1802BD3-43AD-4322-95F3-F5F1DFFF9188}.Debug|x86.ActiveCfg = Debug|Win32
+		{A1802BD3-43AD-4322-95F3-F5F1DFFF9188}.Debug|x86.Build.0 = Debug|Win32
+		{A1802BD3-43AD-4322-95F3-F5F1DFFF9188}.Release|x64.ActiveCfg = Release|x64
+		{A1802BD3-43AD-4322-95F3-F5F1DFFF9188}.Release|x64.Build.0 = Release|x64
+		{A1802BD3-43AD-4322-95F3-F5F1DFFF9188}.Release|x86.ActiveCfg = Release|Win32
+		{A1802BD3-43AD-4322-95F3-F5F1DFFF9188}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
