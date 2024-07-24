@@ -1,6 +1,8 @@
 #include "Helper.h"
 #include "json.hpp"
 
+#include <iostream>
+
 using namespace std;
 using namespace nlohmann;
 
@@ -27,19 +29,21 @@ const string permCitraExePath = permCitraPath + "\\" + citraName;
 
 const string roamingAppDataPath = string(getenv("APPDATA")) + "\\";
 
-void manualSubmit() {
-    // Remove checkout.
+bool manualSubmit() {
     json info = jsonLoad(infoPath);
-    info[checkoutName] = "";
-    jsonSave(info, infoPath);
 
     // Get latest save data.
     filesystem::path saveFolderPath(roamingAppDataPath + info[saveFolderName].get<string>());
     string saveFolderFilename = saveFolderPath.filename().string();
-    moveFile(saveFolderPath.string(), repositoryPath, saveFolderFilename);
+    if (!moveFile(saveFolderPath.string(), repositoryPath, saveFolderFilename)) {
+        cout << "Failed to move save data back into repository! DO NOT RUN Gitra.exe AGAIN!\n";
+        return false;
+    }
 
     // Commit changes.
     int commitResult = system(format("cd {} && git add {} {} && git commit -m Update && git push", repositoryPath, infoFileName, saveFolderFilename).c_str());
+
+    return true;
 }
 int main() {
     manualSubmit();

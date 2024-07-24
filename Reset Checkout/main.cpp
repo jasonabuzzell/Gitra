@@ -29,25 +29,6 @@ const string permCitraExePath = permCitraPath + "\\" + citraName;
 
 const string roamingAppDataPath = string(getenv("APPDATA")) + "\\";
 
-// This function will get the latest revision forcefully.
-bool forcePull() {
-    if (system(format("cd {} && git reset --hard HEAD && git clean -f && git pull", repositoryPath).c_str())) return false;
-
-    // Also move new save data to appropriate folder.
-    json info = jsonLoad(infoPath);
-    string saveFolderPartialPath = info[saveFolderName];
-    filesystem::path saveFolderPath(roamingAppDataPath + saveFolderPartialPath);
-    string saveFolderFilename = saveFolderPath.filename().string();
-    string repositorySaveFolderPath = repositoryPath + saveFolderFilename;
-
-    if (!moveFile(repositorySaveFolderPath, saveFolderPath.parent_path().string() + "\\", saveFolderFilename)) {
-        cout << "Failed to move save data into the Citra folder!\n";
-        return false;
-    }
-
-    return true;
-}
-
 void resetCheckout() {
     json info = jsonLoad(infoPath);
     info[checkoutName] = "";
@@ -58,8 +39,6 @@ void resetCheckout() {
 
 
 int main() {
-    system(format("cd {} && git stash", repositoryPath).c_str()); // Stash any changes you had prior.
-    forcePull();
     resetCheckout();
     return 0;
 }
