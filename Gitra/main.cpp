@@ -21,6 +21,7 @@ const string settingsName = "settings.json";
 const string checkoutName = "Checkout";
 const string romName = "ROM";
 const string infoFileName = "info.json";
+const string saveFolderName = "Save Folder Path";
 
 // PATHS
 const string userPath = string(getenv("USERPROFILE")) + "\\";
@@ -34,20 +35,22 @@ const string tempCitraPath = "binaries\\citra";
 const string permCitraPath = localAppDataPath + "Citra\\nightly";
 const string permCitraExePath = permCitraPath + "\\" + citraName;
 
+const string roamingAppDataPath = string(getenv("APPDATA")) + "\\";
+
 // On shutdown, we should commit the repository.
 void shutdown() {
     // Remove checkout.
     json info = jsonLoad(infoPath);
-    info["Checkout"] = "";
+    info[checkoutName] = "";
     jsonSave(info, infoPath);
 
-    // Zip up updated ROM.
-    string romFileName = info[romName];
-    cout << "\nZipping up new changes to game file...";
-    int zipResult = system(format("cd {} && tar.exe -a -c -f {}.zip {}", repositoryPath, romFileName, romFileName).c_str());
+    // Get latest save data.
+    filesystem::path saveFolderPath(roamingAppDataPath + info[saveFolderName].get<string>());
+    string saveFolderFilename = saveFolderPath.filename().string();
+    moveFile(saveFolderPath.string(), repositoryPath, saveFolderFilename);
 
     // Commit changes.
-    int commitResult = system(format("cd {} && git add {} {}.zip && git commit -m Update && git push", repositoryPath, infoFileName, romFileName).c_str());
+    int commitResult = system(format("cd {} && git add {} {} && git commit -m Update && git push", repositoryPath, infoFileName, saveFolderFilename).c_str());
 }
 
 // Intercepts close events on Windows. 
@@ -101,19 +104,29 @@ void cloneRepository() {
     system(format("git config --global --add safe.directory {}", repositoryPath).c_str()); // Need the repository, ugh.
 
     // Setup repo to handle large files, if it isn't already.
-    system(format("cd {} && git lfs track \"*.zip\" ", repositoryPath).c_str());
+    system(format("cd {} && git lfs track \"*.3ds\" \"*.cia\"", repositoryPath).c_str());
     int commitResult = system(format("cd {} && git add .gitattributes && git commit -m Update_Attributes && git push", repositoryPath, infoFileName).c_str());
+}
+
+void setInfo() {
+    json info;
+    info[checkoutName] = "";
+    info[romName] = "";
+    info[saveFolderName] = "";
+    jsonSave(info, infoPath);
+
+    int commitResult = system(format("cd {} && git add {} && git commit -m Set_Info && git push", repositoryPath, infoFileName).c_str());
 }
 
 bool setROM() {
     // Set and copy ROM
     json info = jsonLoad(infoPath);
-    if (info[romName] == "") {
+    if (!info.contains(romName) || info[romName] == "") {
 
         // Update repository with the name of the ROM to run.
         string romStringPath;
         cout << "\nPlease enter the path of the .CIA/.3ds you would like to play: ";
-        cin >> romStringPath;
+        getline(cin, romStringPath);
         filesystem::path romPath(romStringPath);
         cout << "\n";
 
@@ -124,14 +137,35 @@ bool setROM() {
         // Copy that ROM into the repository.
         moveFile(romStringPath, repositoryPath, romFileName);
 
-        // Zip that ROM.
-        int zipResult = system(format("cd {} && tar.exe -a -c -f {}.zip {}", repositoryPath, romFileName, romFileName).c_str());
-
         // Commit zipped ROM.
-        int commitResult = system(format("cd {} && git add {} {}.zip && git commit -m Copy_ROM && git push", repositoryPath, infoFileName, romFileName).c_str());
+        int commitResult = system(format("cd {} && git add {} {} && git commit -m Copy_ROM && git push", repositoryPath, infoFileName, romFileName).c_str());
     }
 
     return true;
+}
+
+void setSaveFolder() {
+    // Set save folder path.
+    json info = jsonLoad(infoPath);
+    if (!info.contains(saveFolderName) || info[saveFolderName] == "") {
+
+        // Update repository with the path to the save folder.
+        string saveFolderPartialPath;
+        cout << "\nPlease enter the path to the Save Data Folder, starting from the Roaming AppData Citra folder (e.g. Citra\\sdmc\\Nintendo 3DS\\00000000000000000000000000000000\\00000000000000000000000000000000\\title\\00040000\\00086300\\data\\00000001): ";
+        getline(cin, saveFolderPartialPath);
+        cout << "\n";
+
+        info[saveFolderName] = saveFolderPartialPath;
+        jsonSave(info, infoPath);
+
+        // Copy that save folder into the directory.
+        filesystem::path saveFolderPath(roamingAppDataPath + saveFolderPartialPath);
+        string saveFolderFilename = saveFolderPath.filename().string();
+        moveFile(saveFolderPath.string(), repositoryPath, saveFolderFilename);
+
+        // Commit zipped ROM.
+        int commitResult = system(format("cd {} && git add {} {} && git commit -m Set_Save_Folder && git push", repositoryPath, infoFileName, saveFolderFilename).c_str());
+    }
 }
 
 // Tries to get exclusive checkout of repository.
@@ -159,24 +193,23 @@ bool getExclusiveCheckout() {
     string romFileName = info[romName];
     int commitResult = system(format("cd {} && git add {} && git commit -m Checkout && git push", repositoryPath, infoFileName).c_str());
 
-    // If we successfully checked out, then extract the ROM.
-    system(format("cd {} && tar.exe -xzvf {}.zip", repositoryPath, romFileName).c_str());
-
     return true;
 }
 
 // This function will get the latest revision forcefully.
 bool forcePull() {
     if (system(format("cd {} && git reset --hard HEAD && git clean -f && git pull", repositoryPath).c_str())) return false;
-    else return true;
-}
+    
+    // Also move new save data to appropriate folder.
+    json info = jsonLoad(infoPath);
+    string saveFolderPartialPath = info[saveFolderName];
+    filesystem::path saveFolderPath(roamingAppDataPath + saveFolderPartialPath);
+    string saveFolderFilename = saveFolderPath.filename().string();
+    string repositorySaveFolderPath = repositoryPath + saveFolderFilename;
 
-void clear() {
-    json info;
-    info[checkoutName] = "";
-    info[romName] = "";
-    jsonSave(info, infoPath);
-    system(format("cd {} && git add {} && git commit -m \'Reset_Info\' && git push", repositoryPath, infoFileName).c_str());
+    moveFile(repositorySaveFolderPath, saveFolderPath.parent_path().string() + "\\", saveFolderFilename);
+    
+    return true;
 }
 
 void resetCheckout() {
@@ -214,8 +247,7 @@ void installGitLFS() {
 // MAIN
 int main() {
     cout << programName + " " + versionName + "\n";
-
-    // system(format("cd {} && git stash", repositoryPath).c_str()); // Stash any changes you had prior.
+    system(format("cd {} && git stash", repositoryPath).c_str()); // Stash any changes you had prior.
 
     // Set handler for closing events. NOT GOING TO DO THIS BECAUSE WINDOWS DOESN'T GIVE ENOUGH TIME.
     // SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, TRUE);
@@ -231,7 +263,9 @@ int main() {
         return 2;
     }
 
+    if (!exists(infoPath)) setInfo();
     setROM();
+    setSaveFolder();
     if (!exists(permCitraExePath)) moveFolder(filesystem::current_path().string() + "\\" + tempCitraPath, permCitraPath);
 
     // CHECKOUT (does not need user input)
@@ -263,7 +297,7 @@ int main() {
         }
 
         Sleep(100); // Just to not tick so often.
-    };
+    }
 
     system("pause");
     return 0;
