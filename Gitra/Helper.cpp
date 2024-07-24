@@ -60,8 +60,7 @@ bool moveFile(const string& oldPath, const string& newPath, const string& newFil
         filesystem::rename(oldPath, newFullPath);
         return true;
 
-    }
-    catch (filesystem::filesystem_error& e) {
+    } catch (filesystem::filesystem_error& e) {
         cout << e.what() << "\n";
         return false;
     }
