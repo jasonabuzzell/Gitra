@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <windows.h>
 #include <codecvt>
@@ -61,6 +62,7 @@ bool moveFile(const string& oldPath, const string& newPath, const string& newFil
 
     }
     catch (filesystem::filesystem_error& e) {
+        cout << e.what() << "\n";
         return false;
     }
 }

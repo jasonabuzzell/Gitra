@@ -38,7 +38,7 @@ const string permCitraExePath = permCitraPath + "\\" + citraName;
 const string roamingAppDataPath = string(getenv("APPDATA")) + "\\";
 
 // On shutdown, we should commit the repository.
-void shutdown() {
+bool shutdown() {
     // Remove checkout.
     json info = jsonLoad(infoPath);
     info[checkoutName] = "";
@@ -47,10 +47,15 @@ void shutdown() {
     // Get latest save data.
     filesystem::path saveFolderPath(roamingAppDataPath + info[saveFolderName].get<string>());
     string saveFolderFilename = saveFolderPath.filename().string();
-    moveFile(saveFolderPath.string(), repositoryPath, saveFolderFilename);
+    if (!moveFile(saveFolderPath.string(), repositoryPath, saveFolderFilename)) {
+        cout << "Failed to move save data back into repository! DO NOT RUN Gitra.exe AGAIN!\n";
+        return false;
+    }
 
     // Commit changes.
     int commitResult = system(format("cd {} && git add {} {} && git commit -m Update && git push", repositoryPath, infoFileName, saveFolderFilename).c_str());
+
+    return true;
 }
 
 // Intercepts close events on Windows. 
@@ -135,7 +140,10 @@ bool setROM() {
         jsonSave(info, infoPath);
 
         // Copy that ROM into the repository.
-        moveFile(romStringPath, repositoryPath, romFileName);
+        if (!moveFile(romStringPath, repositoryPath, romFileName)) {
+            cout << "Failed to move ROM folder!\n";
+            return false;
+        }
 
         // Commit zipped ROM.
         int commitResult = system(format("cd {} && git add {} {} && git commit -m Copy_ROM && git push", repositoryPath, infoFileName, romFileName).c_str());
@@ -144,7 +152,7 @@ bool setROM() {
     return true;
 }
 
-void setSaveFolder() {
+bool setSaveFolder() {
     // Set save folder path.
     json info = jsonLoad(infoPath);
     if (!info.contains(saveFolderName) || info[saveFolderName] == "") {
@@ -161,11 +169,17 @@ void setSaveFolder() {
         // Copy that save folder into the directory.
         filesystem::path saveFolderPath(roamingAppDataPath + saveFolderPartialPath);
         string saveFolderFilename = saveFolderPath.filename().string();
-        moveFile(saveFolderPath.string(), repositoryPath, saveFolderFilename);
+
+        if (!moveFile(saveFolderPath.string(), repositoryPath, saveFolderFilename)) {
+            cout << "Failed to move save folder!\n";
+            return false;
+        }
 
         // Commit zipped ROM.
         int commitResult = system(format("cd {} && git add {} {} && git commit -m Set_Save_Folder && git push", repositoryPath, infoFileName, saveFolderFilename).c_str());
     }
+
+    return true;
 }
 
 // Tries to get exclusive checkout of repository.
@@ -207,7 +221,10 @@ bool forcePull() {
     string saveFolderFilename = saveFolderPath.filename().string();
     string repositorySaveFolderPath = repositoryPath + saveFolderFilename;
 
-    moveFile(repositorySaveFolderPath, saveFolderPath.parent_path().string() + "\\", saveFolderFilename);
+    if (!moveFile(repositorySaveFolderPath, saveFolderPath.parent_path().string() + "\\", saveFolderFilename)) {
+        cout << "Failed to move save data into the Citra folder!\n";
+        return false;
+    }
     
     return true;
 }
@@ -244,6 +261,15 @@ void installGitLFS() {
     }
 }
 
+bool setCitra() { 
+    if (moveFolder(filesystem::current_path().string() + "\\" + tempCitraPath, permCitraPath)) {
+        cout << "Failed to move Citra folder into LocalAppData folder!\n";
+        return false;
+    }
+
+    return true;
+}
+
 // MAIN
 int main() {
     cout << programName + " " + versionName + "\n";
@@ -264,14 +290,28 @@ int main() {
     }
 
     if (!exists(infoPath)) setInfo();
-    setROM();
-    setSaveFolder();
-    if (!exists(permCitraExePath)) moveFolder(filesystem::current_path().string() + "\\" + tempCitraPath, permCitraPath);
+
+    if (!setROM()) {
+        system("pause");
+        return 3;
+    }
+
+    if (!setSaveFolder()) {
+        system("pause");
+        return 4;
+    }
+
+    if (!exists(permCitraExePath)) {
+        if (!setCitra()) {
+            system("pause");
+            return 5;
+        }
+    }
 
     // CHECKOUT (does not need user input)
     if (!getExclusiveCheckout()) {
         system("pause");
-        return 3;
+        return 6;
     }
 
     // RUN
