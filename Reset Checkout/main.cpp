@@ -40,5 +40,6 @@ void resetCheckout() {
 
 int main() {
     resetCheckout();
+    system("pause");
     return 0;
 }

@@ -47,5 +47,6 @@ bool manualSubmit() {
 }
 int main() {
     manualSubmit();
+    system("pause");
     return 0;
 }
