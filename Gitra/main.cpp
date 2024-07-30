@@ -262,7 +262,7 @@ void installGitLFS() {
 }
 
 bool setCitra() { 
-    if (moveFolder(filesystem::current_path().string() + "\\" + tempCitraPath, permCitraPath)) {
+    if (!moveFolder(filesystem::current_path().string() + "\\" + tempCitraPath, permCitraPath)) {
         cout << "Failed to move Citra folder into LocalAppData folder!\n";
         return false;
     }
