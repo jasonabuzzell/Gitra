@@ -15,3 +15,5 @@ std::wstring toWString(const std::string& s);
 bool moveFile(const std::string& oldPath, const std::string& newPath, const std::string& newFileName);
 
 bool moveFolder(const std::string& oldPath, const std::string& newPath);
+
+bool recycle(const std::string& path);

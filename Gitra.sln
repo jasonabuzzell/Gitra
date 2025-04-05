@@ -5,11 +5,9 @@ VisualStudioVersion = 17.5.33530.505
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Gitra", "Gitra\Gitra.vcxproj", "{53A5F3F1-D237-43AD-B31E-777009C2E489}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Reset Checkout", "Reset Checkout\Reset Checkout.vcxproj", "{77A76E56-7713-4765-A04F-90651E06F19C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ResetCheckout", "Reset Checkout\Reset Checkout.vcxproj", "{77A76E56-7713-4765-A04F-90651E06F19C}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ManualSubmit", "ManualSubmit\ManualSubmit.vcxproj", "{806C3C9B-4F4D-4561-A4CF-EDF90D80BD90}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Restart", "Restart\Restart.vcxproj", "{A1802BD3-43AD-4322-95F3-F5F1DFFF9188}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -43,14 +41,6 @@ Global
 		{806C3C9B-4F4D-4561-A4CF-EDF90D80BD90}.Release|x64.Build.0 = Release|x64
 		{806C3C9B-4F4D-4561-A4CF-EDF90D80BD90}.Release|x86.ActiveCfg = Release|Win32
 		{806C3C9B-4F4D-4561-A4CF-EDF90D80BD90}.Release|x86.Build.0 = Release|Win32
-		{A1802BD3-43AD-4322-95F3-F5F1DFFF9188}.Debug|x64.ActiveCfg = Debug|x64
-		{A1802BD3-43AD-4322-95F3-F5F1DFFF9188}.Debug|x64.Build.0 = Debug|x64
-		{A1802BD3-43AD-4322-95F3-F5F1DFFF9188}.Debug|x86.ActiveCfg = Debug|Win32
-		{A1802BD3-43AD-4322-95F3-F5F1DFFF9188}.Debug|x86.Build.0 = Debug|Win32
-		{A1802BD3-43AD-4322-95F3-F5F1DFFF9188}.Release|x64.ActiveCfg = Release|x64
-		{A1802BD3-43AD-4322-95F3-F5F1DFFF9188}.Release|x64.Build.0 = Release|x64
-		{A1802BD3-43AD-4322-95F3-F5F1DFFF9188}.Release|x86.ActiveCfg = Release|Win32
-		{A1802BD3-43AD-4322-95F3-F5F1DFFF9188}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

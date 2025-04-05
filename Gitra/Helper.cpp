@@ -80,3 +80,16 @@ bool moveFolder(const string& oldPath, const string& newPath) {
         return false;
     }
 }
+
+bool recycle(const string& path) {
+    std::wstring stemp = std::wstring(path.begin(), path.end()) + std::wstring(1, L'\0');
+    LPCWSTR sw = stemp.c_str();
+
+    SHFILEOPSTRUCT fileOp = { 0 };
+    fileOp.hwnd = NULL;
+    fileOp.wFunc = FO_DELETE;
+    fileOp.pFrom = sw;
+    fileOp.pTo = NULL;
+    fileOp.fFlags = FOF_ALLOWUNDO | FOF_NOERRORUI | FOF_NOCONFIRMATION | FOF_SILENT;
+    return SHFileOperation(&fileOp);
+}

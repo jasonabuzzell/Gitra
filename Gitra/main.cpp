@@ -16,7 +16,7 @@ using namespace nlohmann;
 
 // NAMES
 const string programName = "Gitra";
-const string versionName = "1.0.0";
+const string versionName = "1.1.2";
 const string settingsName = "settings.json";
 const string checkoutName = "Checkout";
 const string romName = "ROM";
@@ -47,40 +47,24 @@ bool shutdown() {
     // Get latest save data.
     filesystem::path saveFolderPath(roamingAppDataPath + info[saveFolderName].get<string>());
     string saveFolderFilename = saveFolderPath.filename().string();
-    if (!moveFile(saveFolderPath.string(), repositoryPath, saveFolderFilename)) {
+    if (!moveFolder(saveFolderPath.string(), repositoryPath + "\\" + saveFolderFilename)) {
         cout << "Failed to move save data back into repository! DO NOT RUN Gitra.exe AGAIN!\n";
         return false;
     }
 
     // Commit changes.
     int commitResult = system(format("cd {} && git add {} {} && git commit -m Update && git push", repositoryPath, infoFileName, saveFolderFilename).c_str());
+    cout << "Successfully committed! You may now close out of Gitra.exe.\n";
 
     return true;
 }
-
-// Intercepts close events on Windows. 
-// Apparently there's a timeout of 3 seconds for close events, which makes this much more difficult to submit in time.
-// Advise users to close Citra to submit, not the console.
-/*
-BOOL CtrlHandler(DWORD fdwCtrlType)
-{
-    switch (fdwCtrlType) {
-        // Handle the CTRL-C signal. 
-    case CTRL_C_EVENT: case CTRL_CLOSE_EVENT: case CTRL_BREAK_EVENT: case CTRL_LOGOFF_EVENT: case CTRL_SHUTDOWN_EVENT:
-        shutdown();
-        return TRUE;
-
-    default:
-        return FALSE;
-    }
-}
-*/
 
 // Returns the .gitconfig username.
 string getUsername() {
     string gitconfig = readTextFile(userPath + ".gitconfig");
 
     // Find "[user]\n\tname = " in .gitconfig
+    // I ASSUMED ORDER HERE! HAVE TO FIX THIS.
     string usernameField = "[user]\n\tname = ";
     size_t tagIndex = gitconfig.find(usernameField);
     if (tagIndex == string::npos) return "";
@@ -199,9 +183,10 @@ bool getExclusiveCheckout() {
 
     // Get username.
     int configResult = system("git config --global credential.helper store");
+    string username = getUsername();
+    if (username.empty()) username = "Anonymous"; // Make sure we always have a name to submit with.
+    info[checkoutName] = username;
 
-    // If not checked out by anybody, exclusively check it out.
-    info[checkoutName] = getUsername();
     jsonSave(info, infoPath);
 
     string romFileName = info[romName];
@@ -212,7 +197,8 @@ bool getExclusiveCheckout() {
 
 // This function will get the latest revision forcefully.
 bool forcePull() {
-    if (system(format("cd {} && git reset --hard HEAD && git clean -f && git pull", repositoryPath).c_str())) return false;
+    int pullResult = system(format("cd {} && git reset --hard HEAD && git clean -f && git pull", repositoryPath).c_str());
+    if (pullResult != 0) return false;
     
     // Also move new save data to appropriate folder.
     json info = jsonLoad(infoPath);
@@ -221,7 +207,17 @@ bool forcePull() {
     string saveFolderFilename = saveFolderPath.filename().string();
     string repositorySaveFolderPath = repositoryPath + saveFolderFilename;
 
-    if (!moveFile(repositorySaveFolderPath, saveFolderPath.parent_path().string() + "\\", saveFolderFilename)) {
+    // Delete the current save folder from Citra, if exists.
+    if (exists(saveFolderPath.string())) {
+        int recycleResult = recycle(saveFolderPath.string());
+        if (recycleResult != 0) {
+            cout << "Unable to recycle prevous save folder! Going to delete instead!\n";
+            filesystem::remove(saveFolderPath.string());
+        }
+    }
+
+    // Move the repository save folder to the Citra folder.
+    if (!moveFolder(repositorySaveFolderPath, saveFolderPath.string())) {
         cout << "Failed to move save data into the Citra folder!\n";
         return false;
     }
@@ -238,13 +234,17 @@ void resetCheckout() {
 }
 
 // Need to separate this out somehow.
-void installGit() {
+bool installGit() {
     int gitResult = system("git --version");
     if (gitResult != 0) {
         cout << "\nGit not found! Going to run Git and Git LFS setup executables.\nPlease use the default settings when prompted.";
         int installResult = system("cd binaries && Git-2.45.2-64-bit.exe");
         cout << "\nGit installed, please restart Gitra.exe!";
+
+        return false;
     }
+
+    return true;
 }
 
 void installGitLFS() {
@@ -252,12 +252,6 @@ void installGitLFS() {
     if (gitLFSResult != 0) {
         int installResult = system("cd binaries && git-lfs-windows-v3.5.1.exe");
         system("git lfs install");
-
-        /*
-        // Git config somehow? What is username and email?
-        system("git config --global user.name");
-        system("git config --global user.email");
-        */
     }
 }
 
@@ -270,19 +264,32 @@ bool setCitra() {
     return true;
 }
 
+void setUsername() {
+    int usernameResult = system("git config user.name");
+    if (usernameResult != 0) {
+        string username;
+        cout << "Please set a username you'd like to use (so others can tell who is playing): ";
+        cin >> username;
+        int setResult = system(format("git config --global user.name {}", username).c_str());
+    }
+}
+
 // MAIN
 int main() {
     cout << programName + " " + versionName + "\n";
     system(format("cd {} && git stash", repositoryPath).c_str()); // Stash any changes you had prior.
 
-    // Set handler for closing events. NOT GOING TO DO THIS BECAUSE WINDOWS DOESN'T GIVE ENOUGH TIME.
-    // SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, TRUE);
-
     // INSTALL (Git) 
-    installGit();
+    if (!installGit()) {
+        system("pause");
+        return 1;
+    }
+
     installGitLFS();
 
     // SETUP (needs user input)
+    setUsername();
+
     if (!exists(repositoryPath)) cloneRepository();
     if (!forcePull()) {
         system("pause");
@@ -322,7 +329,7 @@ int main() {
         json info = jsonLoad(infoPath);
         string romPath = repositoryPath + info[romName].get<string>();
 
-        cout << "\nRunning Citra...\nDO NOT CLOSE THE CONSOLE! When finished playing, close Citra!";
+        cout << "\nRunning Citra...\nDO NOT CLOSE THE CONSOLE! When finished playing, save the game, then close Citra!\n";
         int result = system(format("{} {}", permCitraExePath, romPath).c_str());
 
         done = true;

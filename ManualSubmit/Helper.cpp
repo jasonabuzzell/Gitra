@@ -5,6 +5,7 @@
 #include <string>
 #include <windows.h>
 #include <codecvt>
+#include <iostream>
 
 using namespace std;
 using namespace nlohmann;
@@ -61,6 +62,7 @@ bool moveFile(const string& oldPath, const string& newPath, const string& newFil
 
     }
     catch (filesystem::filesystem_error& e) {
+        cout << e.what() << "\n";
         return false;
     }
 }

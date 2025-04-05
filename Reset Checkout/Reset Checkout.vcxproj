@@ -24,6 +24,7 @@
     <ProjectGuid>{77a76e56-7713-4765-a04f-90651e06f19c}</ProjectGuid>
     <RootNamespace>ResetCheckout</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>ResetCheckout</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
